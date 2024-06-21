@@ -17,7 +17,8 @@ from ActionsEstLoader import TSSTG
 
 #source = '../Data/test_video/test7.mp4'
 #source = '../Data/falldata/Home/Videos/video (2).avi'  # hard detect
-source = '../Data/falldata/Home/Videos/video (1).avi'
+source = './Data/falldata/Home/Videos/video_1.avi'
+out_path = './Data/falldata/Home/Videos/video_1_out.mp4'
 #source = 2
 
 
@@ -52,7 +53,7 @@ if __name__ == '__main__':
                         help='Show all bounding box from detection.')
     par.add_argument('--show_skeleton', default=True, action='store_true',
                         help='Show skeleton pose.')
-    par.add_argument('--save_out', type=str, default='',
+    par.add_argument('--save_out', type=str, default=out_path,
                         help='Save display to video file.')
     par.add_argument('--device', type=str, default='cuda',
                         help='Device to run model on cpu or cuda.')
@@ -86,7 +87,6 @@ if __name__ == '__main__':
         # Use normal thread loader for webcam.
         cam = CamLoader(int(cam_source) if cam_source.isdigit() else cam_source,
                         preprocess=preproc).start()
-
     #frame_size = cam.frame_size
     #scf = torch.min(inp_size / torch.FloatTensor([frame_size]), 1)[0]
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         outvid = True
         codec = cv2.VideoWriter_fourcc(*'MJPG')
         writer = cv2.VideoWriter(args.save_out, codec, 30, (inp_dets * 2, inp_dets * 2))
-
+    print("line 97")
     fps_time = 0
     f = 0
     while cam.grabbed():
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         for track in tracker.tracks:
             det = torch.tensor([track.to_tlbr().tolist() + [0.5, 1.0, 0.0]], dtype=torch.float32)
             detected = torch.cat([detected, det], dim=0) if detected is not None else det
-
+        print("line 114")
         detections = []  # List of Detections object for tracking.
         if detected is not None:
             #detected = non_max_suppression(detected[None, :], 0.45, 0.2)[0]
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             if args.show_detected:
                 for bb in detected[:, 0:5]:
                     frame = cv2.rectangle(frame, (bb[0], bb[1]), (bb[2], bb[3]), (0, 0, 255), 1)
-
+        print("line 131")
         # Update tracks by matching each track information of current and previous frame or
         # create a new track if no matched.
         tracker.update(detections)
@@ -165,21 +165,23 @@ if __name__ == '__main__':
                                     0.4, (255, 0, 0), 2)
                 frame = cv2.putText(frame, action, (bbox[0] + 5, bbox[1] + 15), cv2.FONT_HERSHEY_COMPLEX,
                                     0.4, clr, 1)
-
+        print("line 167")
         # Show Frame.
         frame = cv2.resize(frame, (0, 0), fx=2., fy=2.)
         frame = cv2.putText(frame, '%d, FPS: %f' % (f, 1.0 / (time.time() - fps_time)),
                             (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
         frame = frame[:, :, ::-1]
         fps_time = time.time()
-
+        print("line 174")
         if outvid:
             writer.write(frame)
-
-        cv2.imshow('frame', frame)
+        print("line 177")
+        cv2.imwrite(f"frames/frame_{f}.jpg", frame)
+        #cv2.imshow('frame', frame)
+        print("line 179")
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
+    print("line 181")
     # Clear resource.
     cam.stop()
     if outvid:
