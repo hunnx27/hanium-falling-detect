@@ -22,7 +22,7 @@ class TSSTG(object):
         self.device = device
 
         self.model = TwoStreamSpatialTemporalGraph(self.graph_args, self.num_class).to(self.device)
-        self.model.load_state_dict(torch.load(weight_file))
+        self.model.load_state_dict(torch.load(weight_file, map_location=self.device))
         self.model.eval()
 
     def predict(self, pts, image_size):
@@ -40,7 +40,7 @@ class TSSTG(object):
         pts[:, :, :2] = scale_pose(pts[:, :, :2])
         pts = np.concatenate((pts, np.expand_dims((pts[:, 1, :] + pts[:, 2, :]) / 2, 1)), axis=1)
 
-        pts = torch.tensor(pts, dtype=torch.float32)
+        pts = torch.tensor(pts, dtype=torch.float32).to(self.device)
         pts = pts.permute(2, 0, 1)[None, :]
 
         mot = pts[:, :2, 1:, :] - pts[:, :2, :-1, :]

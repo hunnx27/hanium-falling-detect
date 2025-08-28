@@ -17,8 +17,9 @@ from ActionsEstLoader import TSSTG
 
 #source = '../Data/test_video/test7.mp4'
 #source = '../Data/falldata/Home/Videos/video (2).avi'  # hard detect
-source = './Data/falldata/Home/Videos/video_1.avi'
-out_path = './Data/falldata/Home/Videos/video_1_out.mp4'
+#source = './Data/falldata/Home/Videos/video_1.avi'
+source = 'F:\develop\workspace_python\hanium.mp4'
+out_path = 'F:\develop\workspace_python\hanium_out.mp4'
 #source = 2
 
 
@@ -75,7 +76,7 @@ if __name__ == '__main__':
     tracker = Tracker(max_age=max_age, n_init=3)
 
     # Actions Estimate.
-    action_model = TSSTG()
+    action_model = TSSTG(device=device)
 
     resize_fn = ResizePadding(inp_dets, inp_dets)
 
@@ -93,7 +94,8 @@ if __name__ == '__main__':
     outvid = False
     if args.save_out != '':
         outvid = True
-        codec = cv2.VideoWriter_fourcc(*'MJPG')
+        fps_val = cam.fps if hasattr(cam, 'fps') and cam.fps > 0 else 30
+        codec = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(args.save_out, codec, 30, (inp_dets * 2, inp_dets * 2))
     print("line 97")
     fps_time = 0
@@ -129,7 +131,7 @@ if __name__ == '__main__':
             if args.show_detected:
                 for bb in detected[:, 0:5]:
                     frame = cv2.rectangle(frame, (bb[0], bb[1]), (bb[2], bb[3]), (0, 0, 255), 1)
-        print("line 131")
+
         # Update tracks by matching each track information of current and previous frame or
         # create a new track if no matched.
         tracker.update(detections)
@@ -155,6 +157,10 @@ if __name__ == '__main__':
                     clr = (255, 0, 0)
                 elif action_name == 'Lying Down':
                     clr = (255, 200, 0)
+                    clr = (255, 0, 0)
+                    action_name= "Fall down"
+                    action = '{}: {:.2f}%'.format(action_name, out[0].max() * 100 * 2)
+                    
 
             # VISUALIZE.
             if track.time_since_update == 0:
@@ -165,23 +171,19 @@ if __name__ == '__main__':
                                     0.4, (255, 0, 0), 2)
                 frame = cv2.putText(frame, action, (bbox[0] + 5, bbox[1] + 15), cv2.FONT_HERSHEY_COMPLEX,
                                     0.4, clr, 1)
-        print("line 167")
         # Show Frame.
         frame = cv2.resize(frame, (0, 0), fx=2., fy=2.)
         frame = cv2.putText(frame, '%d, FPS: %f' % (f, 1.0 / (time.time() - fps_time)),
                             (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        fps_time = time.time()
         frame = frame[:, :, ::-1]
         fps_time = time.time()
-        print("line 174")
         if outvid:
             writer.write(frame)
-        print("line 177")
         cv2.imwrite(f"frames/frame_{f}.jpg", frame)
         #cv2.imshow('frame', frame)
-        print("line 179")
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-    print("line 181")
     # Clear resource.
     cam.stop()
     if outvid:
