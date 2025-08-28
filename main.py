@@ -157,10 +157,6 @@ if __name__ == '__main__':
                     clr = (255, 0, 0)
                 elif action_name == 'Lying Down':
                     clr = (255, 200, 0)
-                    clr = (255, 0, 0)
-                    action_name= "Fall down"
-                    action = '{}: {:.2f}%'.format(action_name, out[0].max() * 100 * 2)
-                    
 
             # VISUALIZE.
             if track.time_since_update == 0:
