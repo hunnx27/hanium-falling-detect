@@ -18,8 +18,8 @@ from ActionsEstLoader import TSSTG
 #source = '../Data/test_video/test7.mp4'
 #source = '../Data/falldata/Home/Videos/video (2).avi'  # hard detect
 #source = './Data/falldata/Home/Videos/video_1.avi'
-source = 'F:\develop\workspace_python\hanium.mp4'
-out_path = 'F:\develop\workspace_python\hanium_out.mp4'
+source = 'D:\develop_hanium\hanium.mp4'
+out_path = 'D:\develop_hanium\hanium_out.mp4'
 #source = 2
 
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         for track in tracker.tracks:
             det = torch.tensor([track.to_tlbr().tolist() + [0.5, 1.0, 0.0]], dtype=torch.float32)
             detected = torch.cat([detected, det], dim=0) if detected is not None else det
-        print("line 114")
+        print("fps " + str(f))
         detections = []  # List of Detections object for tracking.
         if detected is not None:
             #detected = non_max_suppression(detected[None, :], 0.45, 0.2)[0]
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         if outvid:
             writer.write(frame)
         cv2.imwrite(f"frames/frame_{f}.jpg", frame)
-        #cv2.imshow('frame', frame)
+        cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Clear resource.
