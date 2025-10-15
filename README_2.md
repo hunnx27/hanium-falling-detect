@@ -145,5 +145,7 @@ True
 
 # 9. 실행
 ```python
-python main.py
+python main.py # gpu로 특정 비디오 분석하기
+python main.py -C 0 # 웹캠으로 분석하기(노트북 기본 캠)
+python main.py -C 1 # 웹캠으로 분석하기(카메라 캠)
 ```

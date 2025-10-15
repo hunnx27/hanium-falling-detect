@@ -176,8 +176,10 @@ if __name__ == '__main__':
         fps_time = time.time()
         if outvid:
             writer.write(frame)
-        cv2.imwrite(f"frames/frame_{f}.jpg", frame)
-        cv2.imshow('frame', frame)
+
+        # cv2.imwrite(f"frames/frame_{f}.jpg", frame) # 이미지저장
+        cv2.imshow('frame', frame) # 분석화면 보기
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Clear resource.
