@@ -122,6 +122,7 @@ class CamLoader_Q:
                 raise TimeoutError('Can not get a frame from camera!!!')
         return self
 
+# 기존 코드
     def update(self):
         while not self.stopped:
             if not self.Q.full():
@@ -142,6 +143,54 @@ class CamLoader_Q:
                 with self.Q.mutex:
                     self.Q.queue.clear()
             # time.sleep(0.05)
+
+# 전체 저장용
+    # def update(self):
+    #     while not self.stopped:
+    #         frames = []
+    #         for k in range(self.batch_size):
+    #             ret, frame = self.stream.read()
+    #             if not ret:
+    #                 self.stop()
+    #                 return
+
+    #             if self.preprocess_fn is not None:
+    #                 frame = self.preprocess_fn(frame)
+
+    #             frames.append(frame)
+            
+    #         frames = np.stack(frames)
+    #         self.Q.put(frames)  # 큐가 가득 차면 자동으로 대기
+
+# 실시간 캠 겸용
+    # def update(self):
+    #     while not self.stopped:
+    #         frames = []
+    #         for k in range(self.batch_size):
+    #             ret, frame = self.stream.read()
+    #             if not ret:
+    #                 self.stop()
+    #                 return
+
+    #             if self.preprocess_fn is not None:
+    #                 frame = self.preprocess_fn(frame)
+
+    #             frames.append(frame)
+            
+    #         frames = np.stack(frames)
+            
+    #         # 실시간 처리: 큐가 가득 차면 오래된 프레임 1개만 제거
+    #         if self.Q.full():
+    #             try:
+    #                 self.Q.get_nowait()  # 가장 오래된 프레임 버림
+    #             except:
+    #                 pass
+            
+    #         try:
+    #             self.Q.put_nowait(frames)  # 블로킹 없이 추가
+    #         except:
+    #             pass  # 실패해도 계속 진행
+
 
     def grabbed(self):
         """Return `True` if can read a frame."""
