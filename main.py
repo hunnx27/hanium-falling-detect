@@ -21,8 +21,10 @@ from collections import deque
 from datetime import datetime
 
 # 전역 변수로 상태 관리
-fall_buffer = deque(maxlen=5)  # 최근 5프레임 저장
-lying_buffer = deque(maxlen=5)  # 최근 5프레임 저장
+fall_buffer_size = 8 # 감도 : 커질 수록 알람이 안 울림
+lying_buffer_size =5 
+fall_buffer = deque(maxlen=fall_buffer_size)  # 최근 5프레임 저장
+lying_buffer = deque(maxlen=lying_buffer_size)  # 최근 5프레임 저장
 last_alert_time = None
 
 #source = '../Data/test_video/test7.mp4'
@@ -64,8 +66,16 @@ def check_and_alert_fall(action, confidence, cooldown_sec=10, threshold=0.2):
     Returns:
         bool: 알림 발송 여부
     """
-    global fall_buffer, lying_buffer, last_alert_time
+    global fall_buffer, lying_buffer, last_alert_time, patient_id, room_id
     
+    if mode=='file':
+        # 심가은
+        patient_id = 2
+        room_id = 2
+    else:
+        # 이유빈
+        patient_id = 3
+        room_id = 8
     print('check')
     # 1. 현재 프레임 결과 저장
     fall_buffer.append({'fall': action=='Fall', 'conf': confidence})
@@ -73,7 +83,7 @@ def check_and_alert_fall(action, confidence, cooldown_sec=10, threshold=0.2):
     
     # 2. 버퍼가 다 안 찼으면 대기
     if action == 'Fall':
-        if len(fall_buffer) < 5:
+        if len(fall_buffer) < fall_buffer_size:
             return False
         # 3. 쿨다운 체크
         if last_alert_time:
@@ -83,18 +93,18 @@ def check_and_alert_fall(action, confidence, cooldown_sec=10, threshold=0.2):
         
         # 4. 연속 감지 및 평균 신뢰도 확인
         all_fall = all(f['fall'] for f in fall_buffer)
-        avg_conf = sum(f['conf'] for f in fall_buffer) / 5
+        avg_conf = sum(f['conf'] for f in fall_buffer) / fall_buffer_size
         if all_fall and avg_conf >= threshold:
             # 5. API 호출
             print('낙상 감지! 알림 발송 중...1')
-            thread = threading.Thread(target=send_alert, args=(avg_conf, action))
+            thread = threading.Thread(target=send_alert, args=(avg_conf, action, patient_id, room_id))
             thread.daemon = True
             thread.start()
 
             last_alert_time = datetime.now()
             fall_buffer.clear()
     else:
-        if len(lying_buffer) < 5:
+        if len(lying_buffer) < lying_buffer_size:
             return False
         # 3. 쿨다운 체크
         if last_alert_time:
@@ -104,11 +114,11 @@ def check_and_alert_fall(action, confidence, cooldown_sec=10, threshold=0.2):
         
         # 4. 연속 감지 및 평균 신뢰도 확인
         all_lying = all(f['lying'] for f in lying_buffer)
-        avg_conf = sum(f['conf'] for f in lying_buffer) / 5
+        avg_conf = sum(f['conf'] for f in lying_buffer) / lying_buffer_size
         if all_lying and avg_conf >= threshold:
             # 5. API 호출
             print('낙상 위험! 알림 발송 중...1')
-            thread = threading.Thread(target=send_alert, args=(avg_conf, action))
+            thread = threading.Thread(target=send_alert, args=(avg_conf, action, patient_id, room_id))
             thread.daemon = True
             thread.start()
 
@@ -120,7 +130,7 @@ def check_and_alert_fall(action, confidence, cooldown_sec=10, threshold=0.2):
     
     
 
-def send_alert(confidence, action):
+def send_alert(confidence, action, patinet_id, room_id):
     print('send_alert')
     """백그라운드 API 호출'
     // 7. 새 사고/경보 등록
@@ -146,20 +156,23 @@ def send_alert(confidence, action):
         'medium' (중간): 담당 간호사나 직원의 확인 및 조치가 필요한 경보입니다.
         'high' (높음): 여러 의료진의 즉각적인 도움이 필요한 긴급 상황 경보입니다.
     """
-
+    if patient_id == 2 :
+        message_prefix = '102호 심가은 환자'
+    else:
+        message_prefix = '203호 이유빈 환자'
     accident_json = { 
-            'patient_id': '3', 
-            'room_id': '8', 
+            'patient_id': f'{patient_id}', 
+            'room_id': f'{room_id}', 
             'incident_type' : 'accident', 
             'severity' : 'moderate', 
-            'message' : '203호 이유빈 환자 낙상사고 - 즉각 대응 필요' 
+            'message' : f'{message_prefix} 낙상사고! - 즉각 대응 필요' 
         }
     alert_json = { 
-            'patient_id': '3', 
-            'room_id': '8', 
+            'patient_id': f'{patient_id}', 
+            'room_id': f'{room_id}', 
             'incident_type' : 'alert', 
             'severity' : 'minor', 
-            'message' : '203호 이유빈 환자 낙상위험 - 주의 감찰' 
+            'message' : f'{message_prefix} 낙상위험! - 주의 감찰' 
         }
 
     json = accident_json
@@ -222,11 +235,14 @@ if __name__ == '__main__':
     resize_fn = ResizePadding(inp_dets, inp_dets)
 
     cam_source = args.camera
+    global mode
     if type(cam_source) is str and os.path.isfile(cam_source):
         # Use loader thread with Q for video file.
+        mode = 'file'
         cam = CamLoader_Q(cam_source, queue_size=1000, preprocess=preproc).start()
     else:
         # Use normal thread loader for webcam.
+        mode = 'cam'
         cam = CamLoader(int(cam_source) if cam_source.isdigit() else cam_source,
                         preprocess=preproc).start()
     #frame_size = cam.frame_size
